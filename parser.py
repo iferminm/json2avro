@@ -9,6 +9,7 @@ TYPE_MAP = {
     dict: 'record',
     list: 'array',
     bool: 'boolean',
+    type(None): 'null',
 }
 
 COMPLEX_TYPES = (list, dict)
@@ -42,11 +43,13 @@ def parse_record_fields(data: dict) -> list:
 
 
 def parse_field(name: str, value):
+    if value == None:
+        import ipdb; ipdb.set_trace()
     value_type = type(value)
     if value_type in COMPLEX_TYPES:
         return parse_complex(name, value, value_type)
 
-    return {'name': name, 'value': TYPE_MAP[value_type]}
+    return {'name': name, 'type': TYPE_MAP[value_type]}
 
 
 def parse_complex(name, value, value_type) -> dict:
@@ -68,8 +71,23 @@ def parse_record(name: str, data: dict) -> dict:
 
 
 def parse_array(name: str, data: list) -> list:
-    pass
+    data_sample = data.pop()
+    parsed_array = {
+        'name': snake_to_pascal(name, 'array'),
+        'default': [],
+        'type': {
+            'type': 'array',
+            'items': get_items_type(name, data_sample)
+        }
+    }
+    return parsed_array
 
+
+def get_items_type(name, item):
+    item_type = type(item)
+    if item_type in COMPLEX_TYPES:
+        return parse_complex(name, item, item_type)
+    return item_type
 
 
 filename = sys.argv[1]
